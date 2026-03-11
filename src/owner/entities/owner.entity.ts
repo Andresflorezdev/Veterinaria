@@ -14,6 +14,7 @@ export class Owner {
   @Prop({ required: true })
   phone: string;
 
+  @Prop()
   address: string;
 }
 
