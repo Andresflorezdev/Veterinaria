@@ -1,8 +1,6 @@
 <p align="center">
   <a href="http://nestjs.com/" target="blank"><img src="https://nestjs.com/img/logo-small.svg" width="120" alt="Nest Logo" /></a>
-</p>
-
-# 🐾 Veterinary Management API
+</p># 🐾 Veterinary Management API
 
 REST API built with NestJS, MongoDB, and TypeScript for comprehensive veterinary clinic management.
 
@@ -67,10 +65,42 @@ cd Veterinaria
 ### Install dependencies
 
 ```bash
+<<<<<<< HEAD
 npm install
 ```
 
 ### Configure MongoDB
+=======
+# unit tests
+$ npm run test
+
+# e2e tests (rapidas, con servicios mock)
+$ npm run test:e2e
+
+# e2e tests reales (MongoDB en memoria)
+$ npm run test:e2e:real
+
+# test coverage
+$ npm run test:cov
+```
+
+## E2E en este proyecto
+
+- `npm run test:e2e`: valida endpoints con controladores reales y servicios mockeados. Es ideal para feedback rapido.
+- `npm run test:e2e:real`: levanta una base de datos temporal en memoria con `mongodb-memory-server` y valida flujos reales contra Mongo.
+- La suite real no toca tu base local y limpia los datos al finalizar cada prueba.
+
+## Ejecutar E2E desde Swagger y guardar historial
+
+- En Swagger (`/api/docs`) puedes usar el tag `seed` para ejecutar y consultar corridas de pruebas.
+- `POST /seed/tests/run` ejecuta pruebas e2e rapidas (sin body, un clic y listo).
+- `POST /seed/tests/run-real` ejecuta pruebas e2e reales (sin body, un clic y listo).
+- `GET /seed/tests/history` lista las ultimas ejecuciones.
+- `GET /seed/tests/history/{id}` devuelve el detalle de una ejecucion.
+- Los resultados se guardan en la coleccion `test_executions` de la misma base (`pets-db`).
+
+## Deployment
+>>>>>>> 915a7be (Fix README.md)
 
 Update the MongoDB connection string in `src/app.module.ts`:
 
@@ -282,3 +312,8 @@ Contributions are welcome! Please:
 ---
 
 ⭐ If this project helped you, don't forget to give it a star! 
+er.com/nestframework)
+
+## License
+
+Nest is [MIT licensed](https://github.com/nestjs/nest/blob/master/LICENSE).
