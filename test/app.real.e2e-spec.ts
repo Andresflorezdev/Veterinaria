@@ -3,14 +3,38 @@ import { MongooseModule, getConnectionToken } from '@nestjs/mongoose';
 import { Test, TestingModule } from '@nestjs/testing';
 import { MongoMemoryServer } from 'mongodb-memory-server';
 import { Connection } from 'mongoose';
-import request from 'supertest';
+import request, { Response } from 'supertest';
+import { App } from 'supertest/types';
 import { OwnerModule } from '../src/owner/owner.module';
 import { PetModule } from '../src/pet/pet.module';
 import { SeedModule } from '../src/seed/seed.module';
 import { VeterinarianModule } from '../src/veterinarian/veterinarian.module';
 
+type IdBody = { _id: string };
+type PetDetailsBody = {
+  owner: { _id: string };
+  veterinarian: { _id: string };
+};
+type NotFoundBody = { message: string };
+type SeedRunBody = {
+  message: string;
+  data: {
+    ownersCreated: number;
+    veterinariansCreated: number;
+    petsCreated: number;
+  };
+};
+
+function getIdFromResponse(response: Response): string {
+  const body = response.body as unknown as Partial<IdBody>;
+  if (typeof body._id !== 'string') {
+    throw new Error('Invalid response body: _id is missing');
+  }
+  return body._id;
+}
+
 describe('API real (e2e)', () => {
-  let app: INestApplication;
+  let app: INestApplication<App>;
   let mongod: MongoMemoryServer;
   let connection: Connection;
 
@@ -58,7 +82,7 @@ describe('API real (e2e)', () => {
       .post('/owner')
       .send(ownerPayload)
       .expect(201);
-    const ownerId = ownerResponse.body._id as string;
+    const ownerId = getIdFromResponse(ownerResponse);
 
     const vetPayload = {
       name: 'Vet Real',
@@ -71,7 +95,7 @@ describe('API real (e2e)', () => {
       .post('/veterinarian')
       .send(vetPayload)
       .expect(201);
-    const vetId = vetResponse.body._id as string;
+    const vetId = getIdFromResponse(vetResponse);
 
     const petPayload = {
       name: 'Mascota Real',
@@ -86,7 +110,7 @@ describe('API real (e2e)', () => {
       .post('/pet')
       .send(petPayload)
       .expect(201);
-    const petId = petResponse.body._id as string;
+    const petId = getIdFromResponse(petResponse);
 
     await request(app.getHttpServer())
       .get(`/pet/${petId}/exists`)
@@ -96,17 +120,16 @@ describe('API real (e2e)', () => {
     const singlePet = await request(app.getHttpServer())
       .get(`/pet/${petId}`)
       .expect(200);
-    expect(singlePet.body.owner._id).toBe(ownerId);
-    expect(singlePet.body.veterinarian._id).toBe(vetId);
+    const singlePetBody = singlePet.body as unknown as PetDetailsBody;
+    expect(singlePetBody.owner._id).toBe(ownerId);
+    expect(singlePetBody.veterinarian._id).toBe(vetId);
 
     await request(app.getHttpServer())
       .patch(`/pet/${petId}`)
       .send({ age: 5 })
       .expect(200);
 
-    await request(app.getHttpServer())
-      .delete(`/pet/${petId}`)
-      .expect(200);
+    await request(app.getHttpServer()).delete(`/pet/${petId}`).expect(200);
 
     await request(app.getHttpServer())
       .get(`/pet/${petId}/exists`)
@@ -120,24 +143,29 @@ describe('API real (e2e)', () => {
     await request(app.getHttpServer())
       .get(`/owner/${missingId}`)
       .expect(404)
-      .expect((response) => {
-        expect(response.body.message).toContain(
-          `Owner with ID ${missingId} not found`,
-        );
+      .expect((response: Response) => {
+        const body = response.body as unknown as NotFoundBody;
+        expect(body.message).toContain(`Owner with ID ${missingId} not found`);
       });
   });
 
   it('seed crea datos y luego permite limpiar base de datos', async () => {
-    const seedFirst = await request(app.getHttpServer()).post('/seed').expect(201);
-    expect(seedFirst.body.message).toContain('Seed ejecutado');
-    expect(seedFirst.body.data.ownersCreated).toBeGreaterThanOrEqual(0);
-    expect(seedFirst.body.data.veterinariansCreated).toBeGreaterThanOrEqual(0);
-    expect(seedFirst.body.data.petsCreated).toBeGreaterThanOrEqual(0);
+    const seedFirst = await request(app.getHttpServer())
+      .post('/seed')
+      .expect(201);
+    const seedFirstBody = seedFirst.body as unknown as SeedRunBody;
+    expect(seedFirstBody.message).toContain('Seed ejecutado');
+    expect(seedFirstBody.data.ownersCreated).toBeGreaterThanOrEqual(0);
+    expect(seedFirstBody.data.veterinariansCreated).toBeGreaterThanOrEqual(0);
+    expect(seedFirstBody.data.petsCreated).toBeGreaterThanOrEqual(0);
 
-    const seedSecond = await request(app.getHttpServer()).post('/seed').expect(201);
-    expect(seedSecond.body.data.ownersCreated).toBe(0);
-    expect(seedSecond.body.data.veterinariansCreated).toBe(0);
-    expect(seedSecond.body.data.petsCreated).toBe(0);
+    const seedSecond = await request(app.getHttpServer())
+      .post('/seed')
+      .expect(201);
+    const seedSecondBody = seedSecond.body as unknown as SeedRunBody;
+    expect(seedSecondBody.data.ownersCreated).toBe(0);
+    expect(seedSecondBody.data.veterinariansCreated).toBe(0);
+    expect(seedSecondBody.data.petsCreated).toBe(0);
 
     await request(app.getHttpServer())
       .delete('/seed')
@@ -147,6 +175,7 @@ describe('API real (e2e)', () => {
     const ownersAfterClear = await request(app.getHttpServer())
       .get('/owner')
       .expect(200);
-    expect(ownersAfterClear.body).toHaveLength(0);
+    const ownersBody = ownersAfterClear.body as unknown as unknown[];
+    expect(ownersBody).toHaveLength(0);
   });
 });
