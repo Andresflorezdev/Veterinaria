@@ -69,19 +69,7 @@ cd Veterinaria
 npm install
 ```
 
-### Configure MongoDB
-=======
-# unit tests
-$ npm run test
 
-# e2e tests (rapidas, con servicios mock)
-$ npm run test:e2e
-
-# e2e tests reales (MongoDB en memoria)
-$ npm run test:e2e:real
-
-# test coverage
-$ npm run test:cov
 ```
 
 ## E2E en este proyecto
