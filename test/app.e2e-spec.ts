@@ -10,6 +10,7 @@ import { PetController } from '../src/pet/pet.controller';
 import { PetService } from '../src/pet/pet.service';
 import { SeedController } from '../src/seed/seed.controller';
 import { SeedService } from '../src/seed/seed.service';
+import { E2eRunMode } from '../src/seed/dto/run-tests.dto';
 
 describe('API (e2e)', () => {
   let app: INestApplication;
@@ -42,6 +43,9 @@ describe('API (e2e)', () => {
   const seedServiceMock = {
     seed: jest.fn(),
     clear: jest.fn(),
+    runE2ETests: jest.fn(),
+    getE2EHistory: jest.fn(),
+    getE2ERunById: jest.fn(),
   };
 
   beforeAll(async () => {
@@ -388,6 +392,93 @@ describe('API (e2e)', () => {
         .delete('/seed')
         .expect(200)
         .expect(expected);
+    });
+
+    it('POST /seed/tests/run executes fast e2e and persists result', async () => {
+      const expected = {
+        _id: 'run-fast-1',
+        mode: 'fast',
+        status: 'passed',
+        command: 'npm run test:e2e',
+      };
+      seedServiceMock.runE2ETests.mockResolvedValue(expected);
+
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
+      await request(app.getHttpServer())
+        .post('/seed/tests/run')
+        .expect(201)
+        .expect(expected);
+
+      expect(seedServiceMock.runE2ETests).toHaveBeenCalledWith(E2eRunMode.FAST);
+    });
+
+    it('POST /seed/tests/run-real executes real e2e and persists result', async () => {
+      const expected = {
+        _id: 'run-real-1',
+        mode: 'real',
+        status: 'failed',
+        command: 'npm run test:e2e:real',
+      };
+      seedServiceMock.runE2ETests.mockResolvedValue(expected);
+
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
+      await request(app.getHttpServer())
+        .post('/seed/tests/run-real')
+        .expect(201)
+        .expect(expected);
+
+      expect(seedServiceMock.runE2ETests).toHaveBeenCalledWith(E2eRunMode.REAL);
+    });
+
+    it('GET /seed/tests/history returns execution history', async () => {
+      const expected = [
+        {
+          _id: 'run-1',
+          mode: 'fast',
+          status: 'passed',
+          command: 'npm run test:e2e',
+        },
+      ];
+      seedServiceMock.getE2EHistory.mockResolvedValue(expected);
+
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
+      await request(app.getHttpServer())
+        .get('/seed/tests/history')
+        .expect(200)
+        .expect(expected);
+    });
+
+    it('GET /seed/tests/history/:id returns one execution', async () => {
+      const expected = {
+        _id: 'run-1',
+        mode: 'fast',
+        status: 'passed',
+        command: 'npm run test:e2e',
+      };
+      seedServiceMock.getE2ERunById.mockResolvedValue(expected);
+
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
+      await request(app.getHttpServer())
+        .get('/seed/tests/history/run-1')
+        .expect(200)
+        .expect(expected);
+    });
+
+    it('GET /seed/tests/history/:id returns 404 when execution does not exist', async () => {
+      seedServiceMock.getE2ERunById.mockRejectedValue(
+        new NotFoundException('Execution with ID missing not found'),
+      );
+
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
+      await request(app.getHttpServer())
+        .get('/seed/tests/history/missing')
+        .expect(404)
+        .expect((response) => {
+          // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+          expect(response.body.message).toContain(
+            'Execution with ID missing not found',
+          );
+        });
     });
   });
 });
