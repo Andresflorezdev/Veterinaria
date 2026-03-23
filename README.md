@@ -183,10 +183,8 @@ The project implements automatic validation using `class-validator`:
 npm run test
 
 # E2E tests
-npm run test: e2e
-
-# Test coverage
-npm run test:cov
+npm run test:e2e
+npm run test:e2e:real
 
 # Watch mode
 npm run test:watch
@@ -204,8 +202,8 @@ npm run start:prod     # Start in production mode
 npm run lint           # Run linter
 npm run test           # Run tests
 npm run test:watch     # Run tests in watch mode
-npm run test:cov       # Run tests with coverage
 npm run test:e2e       # Run end-to-end tests
+npm run test:e2e:real  # Run end-to-end integration tests (real)
 ```
 
 ## 🗄️ Database Schema
