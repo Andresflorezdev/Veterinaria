@@ -1,9 +1,9 @@
 /* eslint-disable prettier/prettier */
-import {Controller, Get, Post, Body, Patch, Param, Delete} from '@nestjs/common';
+import { BadRequestException, Controller, Get, Post, Body, Patch, Param, Delete, Query } from '@nestjs/common';
 import { OwnerService } from './owner.service';
 import { CreateOwnerDto } from './dto/create-owner.dto';
 import { UpdateOwnerDto } from './dto/update-owner.dto';
-import { ApiOperation, ApiParam, ApiResponse, ApiTags } from '@nestjs/swagger';
+import { ApiOperation, ApiParam, ApiQuery, ApiResponse, ApiTags } from '@nestjs/swagger';
 
 @ApiTags('owners')
 @Controller('owner')
@@ -34,21 +34,28 @@ export class OwnerController {
     return this.ownerService.findOne(id);
   }
 
-  @Patch(':id')
+  @Patch()
   @ApiOperation({ summary: 'Actualizar un dueño' })
-  @ApiParam({ name: 'id', description: 'ID del dueño' })
+  @ApiQuery({name: 'id', description: 'ID del dueño', required: true })
   @ApiResponse({ status: 200, description: 'Dueño actualizado exitosamente' })
   @ApiResponse({ status: 404, description: 'Dueño no encontrado' })
-  update(@Param('id') id: string, @Body() updateOwnerDto: UpdateOwnerDto) {
+  updateByQuery(@Query('id') id: string, @Body() updateOwnerDto: UpdateOwnerDto) {
+    if (!id) {
+      throw new BadRequestException('Debes enviar el query param id con el ID');
+    }
     return this.ownerService.update(id, updateOwnerDto);
   }
 
-  @Delete(':id')
+  @Delete()
   @ApiOperation({ summary: 'Eliminar un dueño' })
-  @ApiParam({name: 'id', description: 'ID del dueño' })
+  @ApiQuery({name: 'owner', description: 'ID del dueño', required: true })
   @ApiResponse({ status: 200, description: 'Dueño eliminado exitosamente' })
   @ApiResponse({ status: 404, description: 'Dueño no encontrado' })
-  remove(@Param('id') id: string) {
-    return this.ownerService.remove(id);
+  async remove(@Query('owner') owner: string) {
+    if (!owner) {
+      throw new BadRequestException('Debes enviar el query param owner con el ID');
+    }
+    await this.ownerService.remove(owner);
+    return { message: 'Dueño eliminado' };
   }
 }

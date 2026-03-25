@@ -1,9 +1,9 @@
 /* eslint-disable prettier/prettier */
-import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
+import { BadRequestException, Controller, Get, Post, Body, Patch, Param, Delete, Query } from '@nestjs/common';
 import { VeterinarianService } from './veterinarian.service';
 import { CreateVeterinarianDto } from './dto/create-veterinarian.dto';
 import { UpdateVeterinarianDto } from './dto/update-veterinarian.dto';
-import { ApiOperation, ApiParam, ApiResponse, ApiTags } from '@nestjs/swagger';
+import { ApiOperation, ApiParam, ApiQuery, ApiResponse, ApiTags } from '@nestjs/swagger';
 
 @ApiTags('veterinarians')
 @Controller('veterinarian')
@@ -34,24 +34,35 @@ export class VeterinarianController {
     return this.veterinarianService.findOne(id);
   }
 
-  @Patch(':id')
+  @Patch()
   @ApiOperation({ summary: 'Actualizar un veterinario' })
-  @ApiParam({ name: 'id', description: 'ID del veterinario' })
+  @ApiQuery({ name: 'id', description: 'ID del veterinario', required: true })
   @ApiResponse({ status: 200, description: 'Veterinario actualizado exitosamente' })
   @ApiResponse({ status: 404, description: 'Veterinario no encontrado' })
-  update(
-    @Param('id') id: string,
+  updateByQuery(
+    @Query('id') id: string,
     @Body() updateVeterinarianDto: UpdateVeterinarianDto,
   ) {
+    if (!id) {
+      throw new BadRequestException(
+        'Debes enviar el query param id con el ID',
+      );
+    }
     return this.veterinarianService.update(id, updateVeterinarianDto);
   }
 
-  @Delete(':id')
+  @Delete()
   @ApiOperation({ summary: 'Eliminar un veterinario' })
-  @ApiParam({ name: 'id', description: 'ID del veterinario' })
+  @ApiQuery({ name: 'veterinarian', description: 'ID del veterinario', required: true })
   @ApiResponse({ status: 200, description: 'Veterinario eliminado exitosamente' })
   @ApiResponse({ status: 400, description: 'Veterinario no encontrado' })
-  remove(@Param('id') id: string) {
-    return this.veterinarianService.remove(id);
+  async remove(@Query('veterinarian') veterinarian: string) {
+    if (!veterinarian) {
+      throw new BadRequestException(
+        'Debes enviar el query param veterinarian con el ID',
+      );
+    }
+    await this.veterinarianService.remove(veterinarian);
+    return { message: 'Veterinario eliminado' };
   }
 }

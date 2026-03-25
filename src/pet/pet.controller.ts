@@ -1,9 +1,9 @@
 /* eslint-disable prettier/prettier */
-import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
+import { BadRequestException, Controller, Get, Post, Body, Patch, Param, Delete, Query } from '@nestjs/common';
 import { PetService } from './pet.service';
 import { CreatePetDto } from './dto/create-pet.dto';
 import { UpdatePetDto } from './dto/update-pet.dto';
-import { ApiOperation, ApiParam, ApiResponse, ApiTags } from '@nestjs/swagger';
+import { ApiOperation, ApiParam, ApiQuery, ApiResponse, ApiTags } from '@nestjs/swagger';
 
 @ApiTags('pets')
 @Controller('pet')
@@ -43,21 +43,28 @@ export class PetController {
     return { exists };
   }
 
-  @Patch(':id')
+  @Patch()
   @ApiOperation({ summary: 'Actualizar una mascota' })
-  @ApiParam({ name: 'id', description: 'ID de la mascota' })
+  @ApiQuery({ name: 'id', description: 'ID de la mascota', required: true })
   @ApiResponse({ status: 200, description: 'Mascota actualizada exitosamente' })
   @ApiResponse({ status: 400, description: 'Mascota no encontrada' })
-  update(@Param('id') id: string, @Body() updatePetDto: UpdatePetDto) {
+  updateByQuery(@Query('id') id: string, @Body() updatePetDto: UpdatePetDto) {
+    if (!id) {
+      throw new BadRequestException('Debes enviar el query param id con el ID');
+    }
     return this.petService.update(id, updatePetDto);
   }
 
-  @Delete(':id')
+  @Delete()
   @ApiOperation({ summary: 'Eliminar una mascota' })
-  @ApiParam({ name: 'id', description: 'ID de la mascota' })
+  @ApiQuery({ name: 'pet', description: 'ID de la mascota', required: true })
   @ApiResponse({ status: 200, description: 'Mascota eliminada exitosamente' })
   @ApiResponse({ status: 400, description: 'Mascota no encontrada' })
-  remove(@Param('id') id: string) {
-    return this.petService.remove(id);
+  async remove(@Query('pet') pet: string) {
+    if (!pet) {
+      throw new BadRequestException('Debes enviar el query param pet con el ID');
+    }
+    await this.petService.remove(pet);
+    return { message: 'Mascota eliminada' };
   }
 }
